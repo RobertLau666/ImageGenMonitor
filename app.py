@@ -222,7 +222,7 @@ if __name__ == "__main__":
     refresh_hour = 8
     server_port = 8000
     log_path = "/data/linky/chenyu.liu/linky_latest/as-loki/image_generate_offline_server/file_process/temp_files/log_files/launch_pipeline_auto_gradio_all.log"
-    save_log_dir = "/data/linky/chenyu.liu/others/view_offline_gen_image_nums/logs"
+    save_log_dir = "./logs"
     
     mode_info_dict = {
         "chat": {
