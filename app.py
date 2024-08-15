@@ -8,6 +8,8 @@ import copy
 import json
 import os
 import socket
+import config
+from tqdm import tqdm
 
 
 def create_dir_or_file(path):
@@ -23,12 +25,15 @@ def create_dir_or_file(path):
 def get_logs():
     create_dir_or_file(save_log_dir)
     local_private_host = socket.gethostbyname(socket.gethostname())
-    for i, public_private_dict in host_dict.items():
-        if public_private_dict['private'] != local_private_host:
-            os.system(f"rsync -avz worker@{public_private_dict['private']}:{log_path} {save_log_dir}/{public_private_dict['public']}_{log_path.split('/')[-1]}")
-        else:
-            local_public_host = public_private_dict['public']
-    os.system(f"cp -r {log_path} {save_log_dir}/{local_public_host}_{log_path.split('/')[-1]}")
+    if not test_mode:
+        for i, public_private_dict in tqdm(config.host_dict.items()):
+            if public_private_dict['private'] != local_private_host:
+                command = f"rsync -avz worker@{public_private_dict['private']}:{log_path} {save_log_dir}/{public_private_dict['public']}_{log_path.split('/')[-1]}"
+                print(f"Running command: {command}")
+                os.system(command)
+            else:
+                local_public_host = public_private_dict['public']
+                os.system(f"cp -r {log_path} {save_log_dir}/{local_public_host}_{log_path.split('/')[-1]}")
 
     log_file_paths = []
     log_file_names = os.listdir(save_log_dir)
@@ -123,8 +128,8 @@ def record_json(log_file_paths):
         record_dict_new[date]["all_ips"]["chat_NPC_nums"] = chat_NPC_nums
         record_dict_new[date]["all_ips"]["wishwell_NPC_nums"] = wishwell_NPC_nums
         record_dict_new[date]["all_ips"]["NPC_nums"] = record_dict_new[date]["all_ips"]["chat_NPC_nums"] + record_dict_new[date]["all_ips"]["wishwell_NPC_nums"]
-        record_dict_new[date]["all_ips"]["chat_image_nums"] = chat_NPC_nums * mode_info_dict["chat"]["group"] * mode_info_dict["chat"]["imgs"] *  mode_info_dict["chat"]["deform_percent"]
-        record_dict_new[date]["all_ips"]["wishwell_image_nums"] = wishwell_NPC_nums * mode_info_dict["wishwell"]["group"] * mode_info_dict["wishwell"]["imgs"] *  mode_info_dict["wishwell"]["deform_percent"]
+        record_dict_new[date]["all_ips"]["chat_image_nums"] = chat_NPC_nums * config.mode_info_dict["chat"]["group"] * config.mode_info_dict["chat"]["imgs"] *  config.mode_info_dict["chat"]["deform_percent"]
+        record_dict_new[date]["all_ips"]["wishwell_image_nums"] = wishwell_NPC_nums * config.mode_info_dict["wishwell"]["group"] * config.mode_info_dict["wishwell"]["imgs"] *  config.mode_info_dict["wishwell"]["deform_percent"]
         record_dict_new[date]["all_ips"]["image_nums"] = record_dict_new[date]["all_ips"]["chat_image_nums"] + record_dict_new[date]["all_ips"]["wishwell_image_nums"]
         all_chat_NPC_nums += record_dict_new[date]["all_ips"]["chat_NPC_nums"]
         all_wishwell_NPC_nums += record_dict_new[date]["all_ips"]["wishwell_NPC_nums"]
@@ -223,46 +228,12 @@ if __name__ == "__main__":
     server_port = 8000
     log_path = "/data/linky/chenyu.liu/linky_latest/as-loki/image_generate_offline_server/file_process/temp_files/log_files/launch_pipeline_auto_gradio_all.log"
     save_log_dir = "./logs"
+    test_mode = True
     
-    mode_info_dict = {
-        "chat": {
-            "group": 30,
-            "imgs": 4,
-            "deform_percent": 0.75
-        },
-        "wishwell": {
-            "group": 30,
-            "imgs": 8,
-            "deform_percent": 0.75
-        }
-    }
-    host_dict = {
-        "0": {
-            "public": "123.56.72.141",
-            "private": "172.19.39.172"
-        },
-        "1": {
-            "public": "123.56.72.135",
-            "private": "172.19.39.177"
-        },
-        "2": {
-            "public": "123.56.190.195",
-            "private": "172.19.39.173"
-        },
-        "3": {
-            "public": "8.147.115.70",
-            "private": "172.19.39.164"
-        },
-        "4": {
-            "public": "123.56.136.79",
-            "private": "172.19.39.170"
-        }
-    }
-
     with gr.Blocks() as demo:
         gr.Markdown("""
                     <div style="display: inline">
-                    <strong><em>view offline generate image nums</em></strong>
+                    <strong><em>ImageGenMonitor</em></strong>
                     </div>
                     """)
         with gr.Tabs():
